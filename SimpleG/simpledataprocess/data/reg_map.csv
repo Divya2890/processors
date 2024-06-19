@@ -1,0 +1,177 @@
+CNTRY,REG,Reg Name Area (FAO)
+2,afg,Afghanistan
+3,alb,Albania
+4,dza,Algeria
+7,xac,Angola
+9,arg,Argentina
+1,arm,Armenia
+10,aus,Australia
+11,aut,Austria
+52,aze,Azerbaijan
+13,bhr,Bahrain
+16,bgd,Bangladesh
+57,blr,Belarus
+255,bel,Belgium
+23,xca,Belize
+53,ben,Benin
+18,xsa,Bhutan
+19,bol,Bolivia (Plurinational State of)
+80,xer,Bosnia and Herzegovina
+20,bwa,Botswana
+21,bra,Brazil
+27,bgr,Bulgaria
+233,bfa,Burkina Faso
+29,xec,Burundi
+115,khm,Cambodia
+32,cmr,Cameroon
+33,can,Canada
+37,caf,Central African Republic
+39,tcd,Chad
+40,chl,Chile
+96,hkg,"China, Hong Kong SAR"
+128,xea,"China, Macao SAR"
+41,chn,"China, mainland"
+214,chn,"China, Taiwan Province of"
+44,col,Colombia
+45,com,Comoros
+46,cog,Congo
+48,cri,Costa Rica
+107,civ,Côte d'Ivoire
+98,hrv,Croatia
+49,xcb,Cuba
+50,cyp,Cyprus
+167,cze,Czechia
+116,xea,Democratic People's Republic of Korea
+250,cod,Democratic Republic of the Congo
+54,dnk,Denmark
+72,xec,Djibouti
+56,dom,Dominican Republic
+58,ecu,Ecuador
+59,egy,Egypt
+60,slv,El Salvador
+61,gnq,Equatorial Guinea
+178,xec,Eritrea
+63,est,Estonia
+209,swz,Eswatini
+238,eth,Ethiopia
+66,xoc,Fiji
+67,fin,Finland
+68,fra,France
+69,xsm,French Guyana
+74,gab,Gabon
+75,xwf,Gambia
+73,geo,Georgia
+79,deu,Germany
+81,gha,Ghana
+84,grc,Greece
+89,gtm,Guatemala
+90,gin,Guinea
+175,xwf,Guinea-Bissau
+91,xsm,Guyana
+93,xcb,Haiti
+95,hnd,Honduras
+97,hun,Hungary
+99,xef,Iceland
+100,ind,India
+101,idn,Indonesia
+102,irn,Iran (Islamic Republic of)
+103,irq,Iraq
+104,irl,Ireland
+105,isr,Israel
+106,ita,Italy
+109,jam,Jamaica
+110,jpn,Japan
+112,jor,Jordan
+108,kaz,Kazakhstan
+114,ken,Kenya
+118,kwt,Kuwait
+113,kgz,Kyrgyzstan
+120,lao,Lao People's Democratic Republic
+119,lva,Latvia
+121,lbn,Lebanon
+122,xsc,Lesotho
+123,xwf,Liberia
+124,xnf,Libya
+125,xef,Liechtenstein
+126,ltu,Lithuania
+256,lux,Luxembourg
+129,mdg,Madagascar
+130,mwi,Malawi
+131,mys,Malaysia
+133,mli,Mali
+136,xwf,Mauritania
+137,mus,Mauritius
+138,mex,Mexico
+141,mng,Mongolia
+273,xer,Montenegro
+143,mar,Morocco
+144,moz,Mozambique
+28,xse,Myanmar
+147,nam,Namibia
+149,npl,Nepal
+150,nld,Netherlands
+156,nzl,New Zealand
+157,nic,Nicaragua
+158,ner,Niger
+159,nga,Nigeria
+154,xer,North Macedonia
+162,nor,Norway
+221,omn,Oman
+165,pak,Pakistan
+299,pse,Palestine
+166,pan,Panama
+168,xoc,Papua New Guinea
+169,pry,Paraguay
+170,per,Peru
+171,phl,Philippines
+173,pol,Poland
+174,prt,Portugal
+177,pri,Puerto Rico
+179,qat,Qatar
+117,kor,Republic of Korea
+146,xee,Republic of Moldova
+182,fra,Réunion
+183,rou,Romania
+185,rus,Russian Federation
+184,rwa,Rwanda
+194,sau,Saudi Arabia
+195,sen,Senegal
+272,srb,Serbia
+197,xwf,Sierra Leone
+199,svk,Slovakia
+198,svn,Slovenia
+25,xoc,Solomon Islands
+201,xec,Somalia
+202,zaf,South Africa
+277,xec,South Sudan
+203,esp,Spain
+38,lka,Sri Lanka
+276,sdn,Sudan
+207,xsm,Suriname
+210,swe,Sweden
+211,che,Switzerland
+212,syr,Syrian Arab Republic
+208,tjk,Tajikistan
+216,tha,Thailand
+176,xse,Timor-Leste
+217,tgo,Togo
+220,tto,Trinidad and Tobago
+222,tun,Tunisia
+223,tur,Türkiye
+213,xsu,Turkmenistan
+226,uga,Uganda
+230,ukr,Ukraine
+225,are,United Arab Emirates
+229,gbr,United Kingdom of Great Britain and Northern Ireland
+215,tza,United Republic of Tanzania
+231,usa,United States of America
+234,ury,Uruguay
+235,uzb,Uzbekistan
+155,xoc,Vanuatu
+236,ven,Venezuela (Bolivarian Republic of)
+237,vnm,Viet Nam
+205,xnf,Western Sahara
+249,xws,Yemen
+251,zmb,Zambia
+181,zwe,Zimbabwe
+206,F206,Sudan (former)

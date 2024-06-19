@@ -1,0 +1,42 @@
+# base image
+Stage0 += baseimage(image='ubuntu:22.04') 
+
+# Python 3
+Stage0 += python(python3=True,python2=False)
+
+Stage0 += gnu()
+
+Stage0 += openblas()
+
+Stage0 += packages(ospackages=['apt-utils', 'gpg-agent', 'build-essential', 'software-properties-common','python3-pip','python3-setuptools','python3-wheel','libpython3-dev', 'wget','git','gcc','g++','curl', 'r-base','wget', 'openssh-client', 'python3-distutils', 'nano', 'gfortran', 'gnupg', 'tzdata', 'libopenblas-dev','ca-certificates', 'nano','python-is-python3'])
+# Copy files
+  
+Stage0 += shell(commands=['add-apt-repository ppa:deadsnakes/ppa'])
+# Upgrade pip and setuptools
+Stage0 += shell(commands=['python3 -m pip install -U pip setuptools'])
+
+# Install framework
+Stage0 += pip(packages=['geoedfframework==0.6.0'],pip='pip3')
+
+Stage0 += environment(variables={'DEBIAN_FRONTEND': 'noninteractive', 'DEBCONF_NONINTERACTIVE_SEEN': 'true' })
+
+# Update environment
+Stage1 += environment(variables={'PATH':'/usr/local/bin:$PATH','PYTHONPATH':'/usr/local/lib/python3.10/dist-packages:$PYTHONPATH','GPDIR': '/gp12', 'PATH': '${GPDIR}/bin:/usr/bin:${PATH}', 'LD_LIBRARY_PATH': '${GPDIR}/lib:${LD_LIBRARY_PATH}', 'FGP': '"gfortran-fno-range-check"'})
+
+Stage1 += shell(commands=['echo "America/New_York" > /etc/timezone', 'ln -fs /usr/share/zoneinfo/America/New_York /etc/localtime', 'dpkg-reconfigure -f noninteractive tzdata'])
+
+Stage1 += copy(src='/home/earthcube/geoedf/files/simpledataprocess02/gp12/*',dest='/gp12/')
+
+Stage1 += shell(commands=["cd /gp12 && ls -l"])
+
+Stage1 += shell(commands=['cd /gp12', './configure.sh && make -j 4'])
+
+# Copy files
+Stage1 += copy(src='simpledataprocess/*',dest='/simpledataprocess/')
+
+Stage1 += shell(commands=['cd /tmp', 'git clone https://github.com/GEMPACKsoftware/HARPY.git', 'cd HARPY', 'python3 -m pip install .'])
+# Install this package
+Stage1 += shell(commands=['cd /simpledataprocess', 'pip3 install .'])
+
+# Make scripts executable
+Stage1 += shell(commands=['chmod a+x /usr/local/bin/*.py', 'chmod -R go+rX /usr/local/lib/python3.10/dist-packages','chmod a+x /usr/local/bin/*.sh']) 
