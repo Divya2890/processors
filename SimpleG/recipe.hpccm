@@ -25,7 +25,7 @@ Stage1 += environment(variables={'PATH':'/usr/local/bin:$PATH','PYTHONPATH':'/us
 
 Stage1 += shell(commands=['echo "America/New_York" > /etc/timezone', 'ln -fs /usr/share/zoneinfo/America/New_York /etc/localtime', 'dpkg-reconfigure -f noninteractive tzdata'])
 
-Stage1 += copy(src='/home/earthcube/geoedf/files/simpledataprocess02/gp12/*',dest='/gp12/')
+Stage1 += copy(src='/home/earthcube/geoedf/files/SimpleG/gp12/*',dest='/gp12/')
 
 Stage1 += shell(commands=["cd /gp12 && ls -l"])
 
