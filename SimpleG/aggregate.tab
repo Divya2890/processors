@@ -1,0 +1,586 @@
+!============================================================================!
+!    SIMPLE aggregation code                                                 !
+!    This code aggregates the data based on the mapping file and parameter   !
+!    in the input folder                                                     !
+!    Coded by UBaldos 202210                                                 ! 
+!============================================================================!
+
+!============================================================================!
+!   Declaration of input and output files, sets and set mapping              ! 
+!============================================================================!
+!        Data files  (see input folder)                                      !     
+FILE REGDATA    # core database #;
+FILE database   # module and parameter database #;
+
+!        Output files (see output folder)                                   !
+FILE (NEW) LANDDATA    ! model database !;
+FILE (NEW) LANDSETS    ! model set file !;
+FILE (NEW) LANDPARM    ! model parameter file !;
+
+!        Sets                                                               !
+!               Country/Regions                                             !
+SET REG # SIMPLE regions #
+    read elements from file REGDATA header "H2";
+    write (set) REG to file LANDSETS header"REG" 
+    longname "Regions";
+SET OREG # database regions #
+    read elements from file REGDATA header "H1";
+
+!              Set mapping                                                  !
+Mapping MP_REG from OREG to REG; 
+        read (BY_ELEMENTS) MP_REG from file REGDATA header "MP1";
+
+!               Commodities                                                 !
+SET CONS_COMM # all consumption commodities #
+    read elements from file REGDATA header "AGGC";
+    write (set) CONS_COMM to file LANDSETS header"AGGC" 
+    longname "Commodities";
+SET FOOD_COMM # food commodities: subset of consumption comm. #
+    read elements from file REGDATA header "AGGF";
+    write (set) FOOD_COMM to file LANDSETS header"AGGF" 
+    longname "Food Commodities: Subset of Commodities";
+
+SET MKT # global-local markets #
+    read elements from file REGDATA header "MKT";
+    write (set) MKT to file LANDSETS header"MKT" 
+    longname "Local and Global Markets";
+
+SET COEF # regression coefficients #
+    read elements from file REGDATA header "COEF";
+    write (set) COEF to file LANDSETS header"COEF" 
+    longname "Regression Parameter Estimates";
+
+
+!============================================================================!
+!   Reading and processing all data files first                              ! 
+!============================================================================!
+!        define and read in core data                                     !
+Coefficient(all,c,CONS_COMM)(all,o,OREG) QCONS0(c,o);
+Coefficient(all,c,CONS_COMM)(all,o,OREG) VCONS0(c,o);
+Coefficient(all,o,OREG) INC_PC0(o);
+Coefficient(all,o,OREG) POP0(o);
+Coefficient(all,o,OREG) VCROP0(o);
+Coefficient(all,o,OREG) QCROP0(o);
+Coefficient(all,o,OREG) QCRPFEED0(o);
+Coefficient(all,o,OREG) QCRPFOOD0(o);
+Coefficient(all,o,OREG) QCRPBIOF0(o);
+Coefficient(all,o,OREG) QLAND0(o);
+Coefficient(all,o,OREG) VLAND0(o);
+Coefficient(all,o,OREG) VNLAND0(o);
+Coefficient(all,o,OREG) PNLAND0(o);
+Coefficient(all,o,OREG) VNCRPFEED0(o);
+Coefficient(all,o,OREG) VNCRPFOOD0(o);
+Coefficient(all,o,OREG) PNCRPFEED0(o);
+Coefficient(all,o,OREG) PNCRPFOOD0(o);
+Coefficient(all,o,OREG)(all,m,MKT) QSCROP0(o,m);
+Coefficient(all,o,OREG)(all,c,FOOD_COMM)(all,m,MKT) QDCROP0(o,c,m);
+
+Read QCONS0 from file REGDATA header "QCON";
+Read VCONS0 from file REGDATA header "VCON";
+Read INC_PC0 from file REGDATA header "YPC ";
+Read POP0 from file REGDATA header "POP ";
+Read VCROP0 from file REGDATA header "VCRP";
+Read QCROP0 from file REGDATA header "QS  ";
+Read QCRPFEED0 from file REGDATA header "QFD ";
+Read QCRPFOOD0 from file REGDATA header "QPR ";
+Read QCRPBIOF0 from file REGDATA header "QBIO";
+Read QLAND0 from file REGDATA header "QLD ";
+Read VLAND0 from file REGDATA header "VLD ";
+Read VNLAND0 from file REGDATA header "VNLD";
+Read PNLAND0 from file REGDATA header "PNLD";
+Read VNCRPFEED0 from file REGDATA header "VNF ";
+Read VNCRPFOOD0 from file REGDATA header "VNPR";
+Read PNCRPFEED0 from file REGDATA header "PNF ";
+Read PNCRPFOOD0 from file REGDATA header "PNPR";
+Read QSCROP0 from file REGDATA header "QSCP";
+Read QDCROP0 from file REGDATA header "QDCP";
+
+!        define and read in module and parameter data                      !
+Coefficient(all,o,OREG) EFED(o);
+Coefficient(all,o,OREG) EFOD(o);
+Coefficient(all,o,OREG) ELN (o);
+Coefficient(all,o,OREG) ENLN(o);
+Coefficient(all,o,OREG) ECRP(o);
+Coefficient(all,o,OREG) ESUB(o);
+Coefficient(all,o,OREG) ETRA(o);
+Coefficient(all,o,OREG) EYIC(o);
+Coefficient(all,o,OREG) EYIL(o);
+Coefficient(all,o,OREG) EYIP(o);
+Coefficient(all,o,OREG) EYIN(o);
+Coefficient(all,o,OREG) EYSC(o);
+Coefficient(all,o,OREG) EYSL(o);
+Coefficient(all,o,OREG) EYSP(o);
+Coefficient(all,o,OREG) EYSN(o);
+Coefficient(all,o,OREG) EPIC(o);
+Coefficient(all,o,OREG) EPIL(o);
+Coefficient(all,o,OREG) EPIP(o);
+Coefficient(all,o,OREG) EPIN(o);
+Coefficient(all,o,OREG) EPSC(o);
+Coefficient(all,o,OREG) EPSL(o);
+Coefficient(all,o,OREG) EPSP(o);
+Coefficient(all,o,OREG) EPSN(o);
+Coefficient(all,o,OREG) ECIC(o);
+Coefficient(all,o,OREG) ECIL(o);
+Coefficient(all,o,OREG) ECIP(o);
+Coefficient(all,o,OREG) ECSC(o);
+Coefficient(all,o,OREG) ECSL(o);
+Coefficient(all,o,OREG) ECSP(o);
+Coefficient(all,o,OREG) SDEV(o);
+Coefficient(all,o,OREG) MCAL(o);
+Coefficient(all,o,OREG) MIDX(o);
+Coefficient(all,o,OREG) MGPI(o);
+Coefficient(all,o,OREG) CALC(o);
+Coefficient(all,o,OREG) CALL(o);
+Coefficient(all,o,OREG) CALP(o);
+Coefficient(all,o,OREG) CACC(o);
+Coefficient(all,o,OREG) CACL(o);
+Coefficient(all,o,OREG) CACP(o);
+Coefficient(all,o,OREG) CHA (o);
+Coefficient(all,o,OREG) CCRP(o);
+Coefficient(all,o,OREG) CNLD(o);
+Coefficient(all,o,OREG) CLVS(o);
+Coefficient(all,o,OREG) CNFD(o);
+Coefficient(all,o,OREG) CLND(o);
+Coefficient(all,o,OREG) CPFD(o);
+Coefficient(all,o,OREG) CNCP(o);
+
+
+Read EFED from file database header "EFED";
+Read EFOD from file database header "EFOD";
+Read ELN  from file database header "ELN ";
+Read ENLN from file database header "ENLN";
+Read ECRP from file database header "ECRP";
+Read ESUB from file database header "ESUB";
+Read ETRA from file database header "ETRA";
+Read EYIC from file database header "EYIC";
+Read EYIL from file database header "EYIL";
+Read EYIP from file database header "EYIP";
+Read EYIN from file database header "EYIN";
+Read EYSC from file database header "EYSC";
+Read EYSL from file database header "EYSL";
+Read EYSP from file database header "EYSP";
+Read EYSN from file database header "EYSN";
+Read EPIC from file database header "EPIC";
+Read EPIL from file database header "EPIL";
+Read EPIP from file database header "EPIP";
+Read EPIN from file database header "EPIN";
+Read EPSC from file database header "EPSC";
+Read EPSL from file database header "EPSL";
+Read EPSP from file database header "EPSP";
+Read EPSN from file database header "EPSN";
+Read ECIC from file database header "ECIC";
+Read ECIL from file database header "ECIL";
+Read ECIP from file database header "ECIP";
+Read ECSC from file database header "ECSC";
+Read ECSL from file database header "ECSL";
+Read ECSP from file database header "ECSP";
+Read SDEV from file database header "SDEV";
+Read MCAL from file database header "MCAL";
+Read MIDX from file database header "MIDX";
+Read MGPI from file database header "MGPI";
+Read CALC from file database header "CALC";
+Read CALL from file database header "CALL";
+Read CALP from file database header "CALP";
+Read CACC from file database header "CACC";
+Read CACL from file database header "CACL";
+Read CACP from file database header "CACP";
+Read CHA  from file database header "CHA ";
+Read CCRP from file database header "CCRP";
+Read CNLD from file database header "CNLD";
+Read CLVS from file database header "CLVS";
+Read CNFD from file database header "CNFD";
+Read CLND from file database header "CLND";
+Read CPFD from file database header "CPFD";
+Read CNCP from file database header "CNCP";
+
+!============================================================================!
+!   Define, aggregate, and write each data and parameters                    ! 
+!============================================================================!
+
+!        define read in and write core data to new data files               !
+Coefficient(all,c,CONS_COMM)(all,r,REG) QCONS(c,r);
+Formula (all,c,CONS_COMM)(all,r,REG)    QCONS(c,r) =             
+    sum(o, OREG: MP_REG(o) EQ r, QCONS0(c,o));
+    Write QCONS to file LANDDATA header"QCON" 
+       longname "Comm. consumption (in 1000 USD, in 1000 MT: Crops only)";
+
+Coefficient(all,c,CONS_COMM)(all,r,REG) VCONS(c,r);
+Formula (all,c,CONS_COMM)(all,r,REG)    VCONS(c,r) =             
+    sum(o, OREG: MP_REG(o) EQ r, VCONS0(c,o));
+    Write VCONS to file LANDDATA header"VCON" 
+          longname "Value of comm. consumption (in 1000 USD)";
+
+Coefficient(all,r,REG) INC_PC(r);
+Formula (all,r,REG)    INC_PC(r) =             
+     sum(o, OREG: MP_REG(o) EQ r,  INC_PC0(o)*POP0(o))
+    /sum(o, OREG: MP_REG(o) EQ r, POP0(o));
+    Write INC_PC to file LANDDATA header"YPC" 
+          longname "Per capita income (in USD)";
+
+Coefficient(all,r,REG) POP(r);
+Formula (all,r,REG)    POP(r) =             
+    sum(o, OREG: MP_REG(o) EQ r, POP0(o));
+    Write POP to file LANDDATA header"POP" 
+          longname "Population (in 1000 persons)";
+
+Coefficient(all,r,REG)    VCROP(r);
+Formula    (all,r,REG)    VCROP(r) =             
+    sum(o, OREG: MP_REG(o) EQ r, VCROP0(o));
+    Write VCROP to file LANDDATA header"VCRP" 
+          longname "Value of Crop Output (in 1000 USD)";
+
+Coefficient(all,r,REG)    QCROP(r);
+Formula    (all,r,REG)    QCROP(r) =             
+    sum(o, OREG: MP_REG(o) EQ r, QCROP0(o));
+    Write QCROP to file LANDDATA header"QS" 
+          longname "Crop Output (in 1000 MT: Corn-eq.)";
+
+Coefficient(all,r,REG)    QCRPFEED(r);
+Formula    (all,r,REG)    QCRPFEED(r) =             
+    sum(o, OREG: MP_REG(o) EQ r, QCRPFEED0(o));
+    Write QCRPFEED to file LANDDATA header"QFD" 
+          longname "Crop use: Livestock sector (in 1000 MT: Corn-eq.)";
+
+Coefficient(all,r,REG)    QCRPFOOD(r);
+Formula    (all,r,REG)    QCRPFOOD(r) =             
+    sum(o, OREG: MP_REG(o) EQ r, QCRPFOOD0(o));
+    Write QCRPFOOD to file LANDDATA header"QPR" 
+          longname "Crop use: Proc. food sector (in 1000 MT: Corn-eq.)";
+
+Coefficient(all,r,REG)    QCRPBIOF(r);
+Formula    (all,r,REG)    QCRPBIOF(r) =             
+    sum(o, OREG: MP_REG(o) EQ r, QCRPBIOF0(o));
+    Write QCRPBIOF to file LANDDATA header"QBIO" 
+          longname "Crop use: Regional biofuels (in 1000 MT: Corn-eq.)";
+
+Coefficient(all,r,REG)    QLAND(r);
+Formula    (all,r,REG)    QLAND(r) =             
+    sum(o, OREG: MP_REG(o) EQ r, QLAND0(o));
+    Write QLAND to file LANDDATA header"QLD" 
+          longname "Cropland Cover (in 1000 ha)";
+
+Coefficient(all,r,REG)    VLAND(r);
+Formula    (all,r,REG)    VLAND(r) =             
+    sum(o, OREG: MP_REG(o) EQ r, VLAND0(o));
+    Write VLAND to file LANDDATA header"VLD" 
+          longname "Value of Cropland Cover (in 1000 USD)";
+
+Coefficient(all,r,REG)    VNLAND(r);
+Formula    (all,r,REG)    VNLAND(r) =             
+    sum(o, OREG: MP_REG(o) EQ r, VNLAND0(o));
+    Write VNLAND to file LANDDATA header"VNLD" 
+          longname "Value of non-land inputs (in 1000 USD)";
+
+Coefficient(all,r,REG)    PNLAND(r);
+Formula    (all,r,REG)    PNLAND(r) = 1;            
+    Write PNLAND to file LANDDATA header"PNLD" 
+          longname "Price of non-land inputs (Index=1)";
+
+Coefficient(all,r,REG)    VNCRPFEED(r);
+Formula    (all,r,REG)    VNCRPFEED(r) =             
+    sum(o, OREG: MP_REG(o) EQ r, VNCRPFEED0(o));
+    Write VNCRPFEED to file LANDDATA header"VNF" 
+       longname "Value of non-crops inputs: Livestock sector (in 1000 USD)";
+
+Coefficient(all,r,REG)    VNCRPFOOD(r);
+Formula    (all,r,REG)    VNCRPFOOD(r) =             
+    sum(o, OREG: MP_REG(o) EQ r, VNCRPFOOD0(o));
+    Write VNCRPFOOD to file LANDDATA header"VNPR" 
+       longname "Value of non-crops inputs: Proc. food sector (in 1000 USD)";
+
+Coefficient(all,r,REG)    PNCRPFEED(r);
+Formula    (all,r,REG)    PNCRPFEED(r) = 1;            
+    Write PNCRPFEED to file LANDDATA header"PNF" 
+          longname "Price of non-crops inputs: Livestock sector (Index=1)";
+
+Coefficient(all,r,REG)    PNCRPFOOD(r);
+Formula    (all,r,REG)    PNCRPFOOD(r) = 1;            
+    Write PNCRPFOOD to file LANDDATA header"PNPR" 
+          longname "Price of non-crops inputs: Proc. food sector (Index=1)";
+
+Coefficient(all,r,REG)(all,m,MKT) QSCROP(r,m);
+Formula    (all,r,REG)(all,m,MKT) QSCROP(r,m) =             
+    sum(o, OREG: MP_REG(o) EQ r, QSCROP0(o,m));
+    Write QSCROP to file LANDDATA header"QSCP" 
+          longname "Crop supply by source (in 1000 MT: Corn-eq.)";
+
+
+Coefficient(all,r,REG)(all,c,FOOD_COMM)(all,m,MKT) QDCROP(r,c,m);
+Formula    (all,r,REG)(all,c,FOOD_COMM)(all,m,MKT) QDCROP(r,c,m) =             
+    sum(o, OREG: MP_REG(o) EQ r, QDCROP0(o,c,m));
+    Write QDCROP to file LANDDATA header"QDCP" 
+          longname "Crop demand by use and source (in 1000 MT: Corn-eq.)";
+
+!        define read in and write module data to new data files             !
+
+Coefficient (all,r,REG) CO2_EMIS_HA(r);
+Formula (all,r,REG)    CO2_EMIS_HA(r) =             
+     sum(o, OREG: MP_REG(o) EQ r, CHA(o)*QLAND0(o))
+     /sum(o, OREG: MP_REG(o) EQ r, QLAND0(o));
+Write CO2_EMIS_HA to file LANDDATA header"CHA" 
+     longname "Carbon trade off: in MT CO2 eq per 1000 ha.";
+
+Coefficient (all,r,REG) CO2_EMIS_CRP(r);
+Formula (all,r,REG)     CO2_EMIS_CRP(r) =             
+     sum(o, OREG: MP_REG(o) EQ r, CCRP(o));
+Write CO2_EMIS_CRP to file LANDDATA header"CCRP" 
+     longname "Emissions from Crop Output, MT CO2-eq.";
+
+Coefficient (all,r,REG) CO2_EMIS_NLD(r);
+Formula (all,r,REG)     CO2_EMIS_NLD(r) =             
+     sum(o, OREG: MP_REG(o) EQ r, CNLD(o));
+Write CO2_EMIS_NLD to file LANDDATA header"CNLD" 
+     longname "Emissions from Nonland Inputs, MT CO2-eq.";
+
+Coefficient (all,r,REG) CO2_EMIS_LVS(r);
+Formula (all,r,REG)     CO2_EMIS_LVS(r) =             
+     sum(o, OREG: MP_REG(o) EQ r, CLVS(o));
+Write CO2_EMIS_LVS to file LANDDATA header"CLVS" 
+     longname "Emissions from Livestock Output, MT CO2-eq.";
+
+Coefficient (all,r,REG) CO2_EMIS_NFD(r);
+Formula (all,r,REG)     CO2_EMIS_NFD(r) =             
+     sum(o, OREG: MP_REG(o) EQ r, CNFD(o));
+Write CO2_EMIS_NFD to file LANDDATA header"CNFD" 
+     longname "Emissions from NonFeed Inputs, MT CO2-eq.";
+
+Coefficient (all,r,REG) CO2_EMIS_LND(r);
+Formula (all,r,REG)     CO2_EMIS_LND(r) =             
+     sum(o, OREG: MP_REG(o) EQ r, CLND(o));
+Write CO2_EMIS_LND to file LANDDATA header"CLND" 
+     longname "Emissions from Cropland Inputs, MT CO2-eq.";
+
+Coefficient (all,r,REG) CO2_EMIS_PFD(r);
+Formula (all,r,REG)     CO2_EMIS_PFD(r) =             
+     sum(o, OREG: MP_REG(o) EQ r, CPFD(o));
+Write CO2_EMIS_PFD to file LANDDATA header"CPFD" 
+     longname "Emissions from Processed Food Output, MT CO2-eq.";
+
+Coefficient (all,r,REG) CO2_EMIS_NCP(r);
+Formula (all,r,REG)     CO2_EMIS_NCP(r) =             
+     sum(o, OREG: MP_REG(o) EQ r, CNCP(o));
+Write CO2_EMIS_NCP to file LANDDATA header"CNCP" 
+     longname "Emissions from NonCrop Inputs, MT CO2-eq.";
+
+!        define read in and write parameters to new parameter file          !
+
+Coefficient(all,r,REG) ECRPFEED(r);
+Formula (all,r,REG) ECRPFEED(r) =
+     sum(o, OREG: MP_REG(o) EQ r, EFED(o)*QCRPFEED0(o))
+     /sum(o, OREG: MP_REG(o) EQ r, QCRPFEED0(o));
+Write ECRPFEED to file LANDPARM header"EFED" 
+     longname "Elasticity of Sub. for Livestock Production";
+
+Coefficient(all,r,REG) ECRPFOOD(r);
+Formula (all,r,REG) ECRPFOOD(r) =
+     sum(o, OREG: MP_REG(o) EQ r, EFOD(o)*QCRPFOOD0(o))
+     /sum(o, OREG: MP_REG(o) EQ r, QCRPFOOD0(o));
+Write ECRPFOOD to file LANDPARM header"EFOD" 
+     longname "Elasticity of Sub. for Proc Food Production";
+
+
+Coefficient(all,r,REG) ELAND(r);
+Formula (all,r,REG) ELAND(r) =
+     sum(o, OREG: MP_REG(o) EQ r, ELN(o)*QLAND0(o))
+     /sum(o, OREG: MP_REG(o) EQ r, QLAND0(o));
+Write ELAND to file LANDPARM header"ELN" 
+     longname "Supply Price Elas. of Land Supply wrt Land Rents";
+
+Coefficient(all,r,REG) ENLAND(r);
+Formula (all,r,REG) ENLAND(r) =
+     sum(o, OREG: MP_REG(o) EQ r, ENLN(o)*VNLAND0(o))
+     /sum(o, OREG: MP_REG(o) EQ r, VNLAND0(o));
+Write ENLAND to file LANDPARM header"ENLN" 
+     longname "Supply Price Elas. of Non-Land inputs wrt Non-Land Rents";
+
+Coefficient(all,r,REG) ECROP(r);
+Formula (all,r,REG) ECROP(r) =
+     sum(o, OREG: MP_REG(o) EQ r, ECRP(o)*QCROP0(o))
+     /sum(o, OREG: MP_REG(o) EQ r, QCROP0(o));
+Write ECROP to file LANDPARM header"ECRP" 
+     longname "Elasticity of Subs. in Prod. of Crops";
+
+Coefficient(all,r,REG) ESUBD(r);
+Formula (all,r,REG) ESUBD(r) =
+    sum(o, OREG: MP_REG(o) EQ r, ESUB(o) * sum(m, MKT, QSCROP0(o,m)))
+    /sum(o, OREG: MP_REG(o) EQ r, sum(m, MKT, QSCROP0(o,m)));
+Write ESUBD to file LANDPARM header"ESUB" 
+     longname "Elas. of substitution between domestic and imported crops";
+
+Coefficient(all,r,REG) ETRANS(r);
+Formula (all,r,REG) ETRANS(r) =
+    sum(o, OREG: MP_REG(o) EQ r, ETRA(o) * 
+       sum(c, FOOD_COMM, sum(m, MKT, QDCROP0(o,c,m))))
+    /sum(o, OREG: MP_REG(o) EQ r, 
+       sum(c, FOOD_COMM, sum(m, MKT, QDCROP0(o,c,m))));
+Write ETRANS to file LANDPARM header"ETRA" 
+     longname "Elas. of transformation between domestic and imported crops"; 
+
+Coefficient(all,r,REG)(all,c,CONS_COMM)(all,d,COEF) EIY(r,c,d);
+Formula (all,r,REG) EIY(r, "Crops","INT") =
+     sum(o, OREG: MP_REG(o) EQ r, EYIC(o) * VCONS0("Crops",o))
+    /sum(o, OREG: MP_REG(o) EQ r, VCONS0("Crops",o));
+
+Formula (all,r,REG) EIY(r, "Livestock","INT") =
+ sum(o, OREG: MP_REG(o) EQ r, EYIL(o) * VCONS0("Livestock",o))
+    /sum(o, OREG: MP_REG(o) EQ r, VCONS0("Livestock",o));
+
+Formula (all,r,REG) EIY(r, "Proc_Food","INT") =
+ sum(o, OREG: MP_REG(o) EQ r, EYIP(o) * VCONS0("Proc_Food",o))
+    /sum(o, OREG: MP_REG(o) EQ r, VCONS0("Proc_Food",o));
+
+Formula (all,r,REG) EIY(r, "Non_Food","INT") =
+ sum(o, OREG: MP_REG(o) EQ r, EYIN(o) * VCONS0("Non_Food",o))
+    /sum(o, OREG: MP_REG(o) EQ r, VCONS0("Non_Food",o));
+
+Formula (all,r,REG) EIY(r, "Crops","SLP") =
+     sum(o, OREG: MP_REG(o) EQ r, EYSC(o) * VCONS0("Crops",o))
+    /sum(o, OREG: MP_REG(o) EQ r, VCONS0("Crops",o));
+
+Formula (all,r,REG) EIY(r, "Livestock","SLP") =
+ sum(o, OREG: MP_REG(o) EQ r, EYSL(o) * VCONS0("Livestock",o))
+    /sum(o, OREG: MP_REG(o) EQ r, VCONS0("Livestock",o));
+
+Formula (all,r,REG) EIY(r, "Proc_Food","SLP") =
+ sum(o, OREG: MP_REG(o) EQ r, EYSP(o) * VCONS0("Proc_Food",o))
+    /sum(o, OREG: MP_REG(o) EQ r, VCONS0("Proc_Food",o));
+
+Formula (all,r,REG) EIY(r, "Non_Food","SLP") =
+ sum(o, OREG: MP_REG(o) EQ r, EYSN(o) * VCONS0("Non_Food",o))
+    /sum(o, OREG: MP_REG(o) EQ r, VCONS0("Non_Food",o));
+    Write EIY to file LANDPARM header"EIY" 
+     longname "Param. from income elas. reg. (EINC = A + B * LN(INC_PC))";
+
+Coefficient(all,r,REG)(all,c,CONS_COMM)(all,d,COEF) EIP(r,c,d);
+Formula (all,r,REG) EIP(r, "Crops","INT") =
+     sum(o, OREG: MP_REG(o) EQ r, EPIC(o) * VCONS0("Crops",o))
+    /sum(o, OREG: MP_REG(o) EQ r, VCONS0("Crops",o));
+
+Formula (all,r,REG) EIP(r, "Livestock","INT") =
+ sum(o, OREG: MP_REG(o) EQ r, EPIL(o) * VCONS0("Livestock",o))
+    /sum(o, OREG: MP_REG(o) EQ r, VCONS0("Livestock",o));
+
+Formula (all,r,REG) EIP(r, "Proc_Food","INT") =
+ sum(o, OREG: MP_REG(o) EQ r, EPIP(o) * VCONS0("Proc_Food",o))
+    /sum(o, OREG: MP_REG(o) EQ r, VCONS0("Proc_Food",o));
+
+Formula (all,r,REG) EIP(r, "Non_Food","INT") =
+ sum(o, OREG: MP_REG(o) EQ r, EPIN(o) * VCONS0("Non_Food",o))
+    /sum(o, OREG: MP_REG(o) EQ r, VCONS0("Non_Food",o));
+
+Formula (all,r,REG) EIP(r, "Crops","SLP") =
+     sum(o, OREG: MP_REG(o) EQ r, EPSC(o) * VCONS0("Crops",o))
+    /sum(o, OREG: MP_REG(o) EQ r, VCONS0("Crops",o));
+
+Formula (all,r,REG) EIP(r, "Livestock","SLP") =
+ sum(o, OREG: MP_REG(o) EQ r, EPSL(o) * VCONS0("Livestock",o))
+    /sum(o, OREG: MP_REG(o) EQ r, VCONS0("Livestock",o));
+
+Formula (all,r,REG) EIP(r, "Proc_Food","SLP") =
+ sum(o, OREG: MP_REG(o) EQ r, EPSP(o) * VCONS0("Proc_Food",o))
+    /sum(o, OREG: MP_REG(o) EQ r, VCONS0("Proc_Food",o));
+
+Formula (all,r,REG) EIP(r, "Non_Food","SLP") =
+ sum(o, OREG: MP_REG(o) EQ r, EPSN(o) * VCONS0("Non_Food",o))
+    /sum(o, OREG: MP_REG(o) EQ r, VCONS0("Non_Food",o));
+    Write EIP to file LANDPARM header"EIP" 
+     longname "Param. from price elas. reg. (EINC = A + B * LN(INC_PC))";
+
+Coefficient(all,r,REG) UND_INDEXOLD(r);
+Formula (all,r,REG)    UND_INDEXOLD(r) =             
+     sum(o, OREG: MP_REG(o) EQ r, MIDX(o)*POP0(o))
+    /sum(o, OREG: MP_REG(o) EQ r, POP0(o));
+
+Coefficient(all,c,FOOD_COMM)(all,r,REG) QPC_GRAM(c,r);
+Formula (all,r,REG)    QPC_GRAM("Crops",r) =             
+     sum(o, OREG: MP_REG(o) EQ r, CACC(o)*POP0(o))
+    /sum(o, OREG: MP_REG(o) EQ r, POP0(o));
+Formula (all,r,REG)    QPC_GRAM("Livestock",r) =             
+     sum(o, OREG: MP_REG(o) EQ r, CACL(o)*POP0(o))
+    /sum(o, OREG: MP_REG(o) EQ r, POP0(o));
+Formula (all,r,REG)    QPC_GRAM("Proc_Food",r) =             
+     sum(o, OREG: MP_REG(o) EQ r, CACP(o)*POP0(o))
+    /sum(o, OREG: MP_REG(o) EQ r, POP0(o));
+
+    Write QPC_GRAM to file LANDDATA header"CONG" 
+          longname "Food Consumption (grams per capita per day)";
+
+Coefficient(all,c,FOOD_COMM)(all,r,REG) CAL_COMM(c,r);
+Formula (all,r,REG)    CAL_COMM("Crops",r) =             
+     sum(o, OREG: MP_REG(o) EQ r, CACC(o)*CALC(o))/
+     sum(o, OREG: MP_REG(o) EQ r, CACC(o));
+Formula (all,r,REG)    CAL_COMM("Livestock",r) =             
+     sum(o, OREG: MP_REG(o) EQ r, CACL(o)*CALL(o))/
+     sum(o, OREG: MP_REG(o) EQ r, CACL(o));
+Formula (all,r,REG)    CAL_COMM("Proc_Food",r) =             
+     sum(o, OREG: MP_REG(o) EQ r, CACP(o)*CALP(o))/
+     sum(o, OREG: MP_REG(o) EQ r, CACP(o));
+Write CAL_COMM to file LANDDATA header"CAL" 
+     longname "Caloric content of commodity (kcal per gram)";
+
+Coefficient(all,r,REG)(all,c,FOOD_COMM)(all,d,COEF) ECAL(r,c,d);
+Formula (all,r,REG) ECAL(r, "Crops","INT") =
+     sum(o, OREG: MP_REG(o) EQ r, ECIC(o) * VCONS0("Crops",o))
+    /sum(o, OREG: MP_REG(o) EQ r, VCONS0("Crops",o));
+
+Formula (all,r,REG) ECAL(r, "Livestock","INT") =
+ sum(o, OREG: MP_REG(o) EQ r, ECIL(o) * VCONS0("Livestock",o))
+    /sum(o, OREG: MP_REG(o) EQ r, VCONS0("Livestock",o));
+
+Formula (all,r,REG) ECAL(r, "Proc_Food","INT") =
+ sum(o, OREG: MP_REG(o) EQ r, ECIP(o) * VCONS0("Proc_Food",o))
+    /sum(o, OREG: MP_REG(o) EQ r, VCONS0("Proc_Food",o));
+
+Formula (all,r,REG) ECAL(r, "Crops","SLP") =
+     sum(o, OREG: MP_REG(o) EQ r, ECSC(o) * VCONS0("Crops",o))
+    /sum(o, OREG: MP_REG(o) EQ r, VCONS0("Crops",o));
+
+Formula (all,r,REG) ECAL(r, "Livestock","SLP") =
+ sum(o, OREG: MP_REG(o) EQ r, ECSL(o) * VCONS0("Livestock",o))
+    /sum(o, OREG: MP_REG(o) EQ r, VCONS0("Livestock",o));
+
+Formula (all,r,REG) ECAL(r, "Proc_Food","SLP") =
+ sum(o, OREG: MP_REG(o) EQ r, ECSP(o) * VCONS0("Proc_Food",o))
+    /sum(o, OREG: MP_REG(o) EQ r, VCONS0("Proc_Food",o));
+    Write ECAL to file LANDPARM header"ECAL" 
+    longname "Param. from food caloric content (KCAL = A + B * LN(INC_PC) )";
+
+SET UNDREG # regions which are food insecure #  = (all,r,REG : UND_INDEXOLD(r) > 2.5) ;
+    write (set) UNDREG to file LANDSETS header"UREG" 
+    longname "Regions which are food insecure (>2.5% of pop. cal. undernourished)";
+
+Coefficient(all,r,UNDREG) MIN_CAL(r);
+Formula (all,r,UNDREG)    MIN_CAL(r) =             
+     sum(o, OREG: MP_REG(o) EQ r, MCAL(o)*POP0(o))
+    /sum(o, OREG: MP_REG(o) EQ r, POP0(o));
+    Write MIN_CAL to file LANDDATA header"MCAL" 
+          longname "Minimum caloric requirements (kcal per day)";
+
+Coefficient(all,r,UNDREG) UND_INDEX(r);
+Formula (all,r,UNDREG)    UND_INDEX(r) =             
+     sum(o, OREG: MP_REG(o) EQ r, MIDX(o)*POP0(o))
+    /sum(o, OREG: MP_REG(o) EQ r, POP0(o));
+    Write UND_INDEX to file LANDDATA header"UIDX" 
+          longname " Caloric Undernutrition Index (% of total population)";
+
+Coefficient(all,r,UNDREG) UND_GAP_IND(r);
+Formula (all,r,UNDREG)    UND_GAP_IND(r) =             
+     sum(o, OREG: MP_REG(o) EQ r, MGPI(o)*POP0(o))
+    /sum(o, OREG: MP_REG(o) EQ r, POP0(o));
+    Write UND_GAP_IND to file LANDDATA header"UGPI" 
+longname " Caloric Undernutrition gap index (% of min. cal. req.)";
+
+
+Coefficient(all,r,UNDREG) SDEV_CAL(r);
+Formula (all,r,UNDREG) SDEV_CAL(r) =
+    sum(o, OREG: MP_REG(o) EQ r, SDEV(o)* POP0(o)) /  
+    sum(o, OREG: MP_REG(o) EQ r, POP0(o));
+    Write SDEV_CAL to file LANDPARM header"SDEV" 
+    longname "st.dev. of log normal dist. of per capita caloric cons.";
+
+ 
+Coefficient (parameter)                                          SEGMKT
+     # dummy for segmented market (default = 1, integrated markets = 0) #;
+Formula SEGMKT = 1;
+    write SEGMKT to file LANDPARM header"DSEG" 
+    longname "dummy for segmented market (default = 1, integrated markets = 0)";

@@ -1,0 +1,404 @@
+!============================================================================!
+!    SIMPLE Basic Database Code                                              !
+!    This code calculates the database automatically. User needs to edit the ! 
+!         cmf file in order to select the base year                          !
+!============================================================================!
+
+!============================================================================!
+!   Declaration of input and output files, sets and set mapping              ! 
+!============================================================================!
+!        Data files  (see input folder)                                      !     
+FILE database  # database of shares and parameters from various sources #;
+FILE INC_DAT   # FAOSTAT real GDP (in million USD) #;
+FILE POP_DAT   # FAOSTAT population (in 1000 numbers) #;
+FILE QCROP_DAT # FAOSTAT aggregate crop output (in corn. eq. MTs) #;
+FILE VCROP_DAT # FAOSTAT value of aggregate crop output (in million USD) #;
+FILE QLAND_DAT # FAOSTAT cropland (in 1000 ha) #;
+
+!        Output files (see output folder)                                   !
+FILE (NEW) REGDATA    ! main database !;
+FILE (NEW) DATACHKS    ! checks for main database !; 
+
+!        Sets                                                               !
+!               Country/Regions                                             !
+SET REG # regions in database #
+    read elements from file database header "H1";
+SET NREG # new regions #
+    read elements from file database header "H2";
+
+!              Set mapping                                                  !
+Mapping MP_REG from REG to NREG; 
+        read (BY_ELEMENTS) MP_REG from file database header "MP1";
+
+!               Commodities                                                 !
+SET CONS_COMM # all consumption commodities #
+    (Crops,Livestock,Proc_Food,Non_Food);
+SET FOOD_COMM # food commodities: subset of consumption comm. #
+    (Crops,Livestock,Proc_Food);
+Subset FOOD_COMM is subset of FOOD_COMM;
+
+SET MKT # global-local markets #
+    (local,global);
+
+SET COEF # regression coefficients #
+    (INT,SLP);
+
+!============================================================================!
+!   Reading and processing all data files first                              ! 
+!============================================================================!
+!        main data                                                           !
+Coefficient (all,r,REG) INC(r)
+    # real GDP (in million USD) #;
+    read INC from file INC_DAT header "CSV";
+
+Coefficient (all,r,REG) POP(r)
+    # population (in 1000 numbers) #;
+    read POP from file POP_DAT header "CSV";
+
+Coefficient (all,r,REG) QCROP(r)
+    # aggregate crop output (in corn. eq. MTs) #;
+   read QCROP from file QCROP_DAT header "CSV";
+
+Coefficient (all,r,REG) VCROP(r)
+    # value of aggregate crop output (in million USD) #;
+    read VCROP from file VCROP_DAT header "CSV";
+
+Coefficient (all,r,REG) QLAND(r)
+    # cropland (in 1000 ha) #;
+    read QLAND from file QLAND_DAT header "CSV";
+
+!        remapping and renaming main data                                    !
+Coefficient (all,r,REG) INC_PCr(r)
+    # Per capita income (in USD) #;
+    Formula (all,r,REG) INC_PCr(r) = ROUND(INC(r)/{POP(r)/10^3});
+
+Coefficient (all,r,REG) POPr(r)
+    # Population (in 1000 persons) #;
+   Formula (all,r,REG) POPr(r) = ROUND(POP(r)); ! orig. data is in 1000 !
+ 
+Coefficient (REAL) (all,r,REG) QCROPr(r)
+    # Crop Output (in 1000 MT: Corn-eq.) #;
+    Formula (all,r,REG) QCROPr(r) = ROUND(QCROP(r)/10^3);
+
+Coefficient (REAL) PCROP # World Crop Price (in USD per MT) #;
+    Formula PCROP = ROUND(sum(r, REG, VCROP(r))/
+                    sum(r, REG, QCROP(r)));
+
+Coefficient (REAL) (all,r,REG) VCROPr(r)
+    # Value of Crop Output (in 1000 USD) #;
+    Formula (all,r,REG) VCROPr(r) =  QCROPr(r)*PCROP;
+
+Coefficient (REAL) (all,r,REG) QLANDr(r)
+    # Cropland Cover (in 1000 ha) #;
+    Formula (all,r,REG) QLANDr(r) = ROUND(QLAND(r)); ! orig. data is in 1000 !
+
+!============================================================================!
+!   Reading shares                                                           ! 
+!============================================================================!
+Coefficient (all,r,REG) 
+    CRPSHRBIO(r)   # global biofuel share #;
+    read CRPSHRBIO from file database header "SBIO";
+
+! Initialize Regional Biofuels Share if zero !  
+ Formula (all,r,REG) CRPSHRBIO(r) 
+    = IF(CRPSHRBIO(r) = 0, 0.000001) + CRPSHRBIO(r);
+
+Coefficient  (all,r,REG)(all,k,MKT)  
+    CRPSHRCONS(r,k)  # crop for direct consumption : local-global #;
+    read (all,r,REG) CRPSHRCONS(r,"local") from file database header "SCNL";
+    read (all,r,REG) CRPSHRCONS(r,"global") from file database header "SCNG";
+
+Coefficient  (all,r,REG)(all,k,MKT)  
+    CRPSHRFEED(r,k)  # crop for feed use in livestock sector : local-global #;
+    read (all,r,REG) CRPSHRFEED(r,"local") from file database header "SLVL";
+    read (all,r,REG) CRPSHRFEED(r,"global") from file database header "SLVG";
+
+Coefficient  (all,r,REG)(all,k,MKT)  
+    CRPSHRFOOD(r,k)  # crop for crop in processed food sector : local-global #;
+    read (all,r,REG) CRPSHRFOOD(r,"local") from file database header "SLVL";
+    read (all,r,REG) CRPSHRFOOD(r,"global") from file database header "SLVG";
+
+! Initialize Purchase Shares if zero and recalculate shares !  
+Formula (all,r,REG)(all,k,MKT)  
+    CRPSHRCONS(r,k)  = IF(CRPSHRCONS(r,k) = 0, 0.000001) + CRPSHRCONS(r,k);
+    (all,r,REG)(all,k,MKT)
+    CRPSHRFEED(r,k)  = IF(CRPSHRFEED(r,k) = 0, 0.000001) + CRPSHRFEED(r,k);
+    (all,r,REG)(all,k,MKT)
+    CRPSHRFOOD(r,k)  = IF(CRPSHRFOOD(r,k) = 0, 0.000001) + CRPSHRFOOD(r,k);
+    (all,r,REG)(all,k,MKT)
+    CRPSHRCONS(r,k)  = CRPSHRCONS(r,k)/[CRPSHRCONS(r,k) + CRPSHRFEED(r,k) + CRPSHRFOOD(r,k)];
+    (all,r,REG)(all,k,MKT)
+    CRPSHRFEED(r,k)  = CRPSHRFEED(r,k)/[CRPSHRCONS(r,k) + CRPSHRFEED(r,k) + CRPSHRFOOD(r,k)];
+    (all,r,REG)(all,k,MKT)
+    CRPSHRFOOD(r,k)  = 1 - CRPSHRCONS(r,k) - CRPSHRFEED(r,k);
+
+
+Coefficient   (all,r,REG)(all,k,MKT) 
+    MKTSHRSUPOLD(r,k)   # mkt. share for crop supplied : local-global #;
+    read (all,r,REG) MKTSHRSUPOLD(r,"local") from file database header "QSL";
+    read (all,r,REG) MKTSHRSUPOLD(r,"global") from file database header "QSG";
+
+Coefficient   (all,r,REG)(all,k,MKT) 
+    MKTSHRSUP(r,k)   # mkt. share for crop supplied : local-global #;
+
+Formula (all,r,REG)(all,k,MKT)  
+    MKTSHRSUP(r,k)  = IF(MKTSHRSUPOLD(r,k) = 0, 0.000001) + MKTSHRSUPOLD(r,k);
+    (all,r,REG)
+    MKTSHRSUP(r,"global") = MKTSHRSUPOLD(r,"global")/sum(j, MKT, MKTSHRSUPOLD(r,j));
+    (all,r,REG)
+    MKTSHRSUP(r,"local") = 1 - MKTSHRSUP(r,"global");
+
+Coefficient  (all,r,REG)
+    MKTSHRDEMOLD(r)   # Import disposition shares for crops #;
+    read MKTSHRDEMOLD from file database header "QD";
+Coefficient  (all,r,REG)
+    MKTSHRDEM(r)   # Import disposition shares for crops #;
+Formula
+    (all,r,REG)
+    MKTSHRDEMOLD(r) =  IF(MKTSHRDEMOLD(r) = 0, 0.000001) + MKTSHRDEMOLD(r);
+Formula
+    (all,r,REG)
+    MKTSHRDEM(r) = MKTSHRDEMOLD(r)/sum(j, REG, MKTSHRDEMOLD(j));
+
+Coefficient  (all,r,REG)
+    CSHRCROP(r)    # Cropland cost shares in crop production #;
+    read CSHRCROP from file database header "XCON";
+Formula
+    (all,r,REG)
+    CSHRCROP(r) =IF(CSHRCROP(r) = 0, 0.000001) + CSHRCROP(r);
+
+Coefficient  (all,r,REG)
+    CSHRLIVE(r)    # Crop cost shares in livestock production #;
+    read CSHRLIVE from file database header "XFED";
+Formula
+    (all,r,REG)
+    CSHRLIVE(r) =IF(CSHRLIVE(r) = 0, 0.000001) + CSHRLIVE(r);
+
+Coefficient  (all,r,REG)
+    CSHRPFOOD(r)   # Crop cost shares in processed food production #;
+    read CSHRPFOOD from file database header "XFOD";
+Formula
+    (all,r,REG)
+    CSHRPFOOD(r) =IF(CSHRPFOOD(r) = 0, 0.000001) + CSHRPFOOD(r);
+
+Write CRPSHRBIO to file DATACHKS header "SH1";
+Write CRPSHRCONS to file DATACHKS header "SH2";
+Write CRPSHRFOOD to file DATACHKS header "SH3";
+Write CRPSHRFEED to file DATACHKS header "SH4";
+Write MKTSHRSUP to file DATACHKS header "SH5";
+Write MKTSHRDEM to file DATACHKS header "SH6";
+Write CSHRCROP to file DATACHKS header "SH7";
+Write CSHRLIVE to file DATACHKS header "SH8";
+Write CSHRPFOOD to file DATACHKS header "SH9";
+
+!============================================================================!
+!   Creating rest of the database                                            ! 
+!============================================================================!
+! Local Crop Demand for Biofuel Feed Stock !
+Coefficient (REAL) (all,r,REG) QCRPBIOFr(r)
+  	# Crop use: Regional biofuels (in 1000 MT: Corn-eq.) #;
+    Formula (all,r,REG) QCRPBIOFr(r) = CRPSHRBIO(r) * 1000 * QCROPr(r) / 1000;
+
+! Crop Supply : Local-Global !
+Coefficient (REAL) (all,r,REG)(all,k,MKT) QSCROPr(r,k)	
+    # Crop supply by source (in 1000 MT: Corn-eq.) #;
+    Formula (all,r,REG)(all,k,MKT) QSCROPr(r,k) 
+    = MKTSHRSUP(r,k)* 10^6 * QCROPr(r) / 10^6;
+
+! Crop Demand : Local-Global !
+Coefficient (REAL) (all,r,REG)(all,c,FOOD_COMM)(all,k,MKT) QDCROPr(r,c,k)
+   	# Crop demand by use and source (in 1000 MT: Corn-eq.) #;
+!   Local Market !
+    Formula (all,r,REG) 
+    QDCROPr(r,"Crops","local")     = CRPSHRCONS(r,"local") *
+                                     [QSCROPr(r,"local") - QCRPBIOFr(r)]; 
+            (all,r,REG) 
+    QDCROPr(r,"Livestock","local") = CRPSHRFEED(r,"local") *
+                                     [QSCROPr(r,"local") - QCRPBIOFr(r)] ;
+            (all,r,REG) 
+    QDCROPr(r,"Proc_Food","local") = [QSCROPr(r,"local") - QCRPBIOFr(r)] 
+                                     - QDCROPr(r,"Crops","local")
+                                     - QDCROPr(r,"Livestock","local") ; 
+!   Global Market !
+    Formula (all,r,REG) 
+    QDCROPr(r,"Crops","global")
+            = CRPSHRCONS(r,"global") * MKTSHRDEM(r)
+              * sum(k, REG, QSCROPr(k,"global"));
+            (all,r,REG)
+    QDCROPr(r,"Livestock","global")
+            = CRPSHRFEED(r,"GLobal") * MKTSHRDEM(r) 
+              * sum(k, REG, QSCROPr(k,"global"));
+            (all,r,REG)
+    QDCROPr(r,"Proc_Food","global")
+           = MKTSHRDEM(r) * sum(k, REG, QSCROPr(k,"global")) -
+             QDCROPr(r,"Crops","global") - 
+             QDCROPr(r,"Livestock","global");
+
+Coefficient (REAL) (all,r,REG) QCRPFEEDr(r)
+  	# Crop use: Livestock sector (in 1000 MT: Corn-eq.) #;
+    Formula (all,r,REG) QCRPFEEDr(r) = sum(m, MKT, QDCROPr(r,"Livestock",m));  
+
+Coefficient (REAL) (all,r,REG) QCRPCONSr(r)
+  	# Crop use: directly as food (in 1000 MT: Corn-eq.) #;
+    Formula (all,r,REG) QCRPCONSr(r) = sum(m, MKT, QDCROPr(r,"Crops",m));
+ 
+Coefficient (REAL) (all,r,REG) QCRPFOODr(r)
+  	# Crop use: Proc. food sector (in 1000 MT: Corn-eq.) #; ! Residual! 
+    Formula (all,r,REG) QCRPFOODr(r) = sum(m, MKT, QDCROPr(r,"Proc_Food",m)); 
+
+! Land and Non-Land Variables !
+Coefficient (REAL) (all,r,REG) VLANDr(r)
+ 	# Value of cropland cover (in 1000 USD) #;
+    Formula (all,r,REG) VLANDr(r) = CSHRCROP(r) * 10^3 * VCROPr(r) / 10^3;
+
+Coefficient (REAL) (all,r,REG) VNLANDr(r)	
+    # Value of non-land inputs (in 1000 USD) #;
+    Formula (all,r,REG) VNLANDr(r) =  VCROPr(r) - VLANDr(r);  
+
+Coefficient (REAL) (all,r,REG) PNLANDr(r)
+	# Price of non-land inputs (Index=1) #;
+    Formula (all,r,REG) PNLANDr(r) = 1;
+
+! Crop and Non-crop variables in the livestock and processed food sectors !
+Coefficient (REAL) (all,r,REG) VNCRPFEEDr(r)
+ 	# Value of non-crops inputs: Livestock sector (in 1000 USD) #;
+    Formula (all,r,REG) VNCRPFEEDr(r) 
+      = {[1/CSHRLIVE(r)] * QCRPFEEDr(r) * PCROP}
+                                        *[1-CSHRLIVE(r)];
+Coefficient (REAL) (all,r,REG) VNCRPFOODr(r)	
+ 	# Value of non-crops inputs: Proc. food sector (in 1000 USD) #;
+    Formula (all,r,REG) VNCRPFOODr(r)
+      = {[1/CSHRPFOOD(r)] * QCRPFOODr(r) * PCROP}
+                                        *[1-CSHRPFOOD(r)];
+
+Coefficient (REAL) (all,r,REG) PNCRPFEEDr(r)
+	# Price of non-crops inputs: Livestock sector (Index=1) #;
+    Formula (all,r,REG) PNCRPFEEDr(r) = 1;
+
+Coefficient (REAL) (all,r,REG) PNCRPFOODr(r)
+	# Price of non-crops inputs: Proc. food sector (Index=1) #;
+    Formula (all,r,REG) PNCRPFOODr(r) = 1;
+
+! Consumption Variables !
+Coefficient (REAL) (all,c,CONS_COMM)(all,r,REG) VCONSr(c,r)
+    # Value of comm. consumption (in 1000 USD) #;
+    Formula (all,r,REG) VCONSr("Crops",r) = PCROP * QCRPCONSr(r);
+    Formula (all,r,REG) VCONSr("Livestock",r) 
+     = [QCRPFEEDr(r) * PCROP] + VNCRPFEEDr(r);
+                            
+    Formula (all,r,REG) VCONSr("Proc_Food",r) 
+     = [QCRPFOODr(r) * PCROP] + VNCRPFOODr(r);
+
+    Formula (all,r,REG) VCONSr("Non_Food",r) = POPr(r)*INC_PCr(r) 
+    - VCONSr("Livestock",r) - VCONSr("Proc_Food",r) -VCONSr("Crops",r); 
+
+Coefficient (REAL) (all,c,CONS_COMM)(all,r,REG) QCONSr(c,r)
+    # Comm. consumption (in 1000 USD, in 1000 MT: 'Crops' only) #; 	
+    Formula (all,r,REG) QCONSr("Crops",r) = QCRPCONSr(r);
+    Formula (all,r,REG) QCONSr("Livestock",r) = VCONSr("Livestock",r);
+    Formula (all,r,REG) QCONSr("Proc_Food",r) = VCONSr("Proc_Food",r);
+    Formula (all,r,REG) QCONSr("Non_Food",r) = VCONSr("Non_Food",r);
+
+!============================================================================!
+!   Checks for the database                                                  ! 
+!============================================================================!
+
+Coefficient (REAL) CHK00
+    # Global Crop Demand and Supply Market Clearing: near zero #; 	
+    Formula CHK00 
+        = sum(r, REG, QCROPr(r)) 
+        - sum(r, REG, QCRPFEEDr(r) + QCRPFOODr(r) + QCONSr("Crops",r) 
+          + QCRPBIOFr(r));
+
+Coefficient (REAL) (all,r,REG) CHK01(r)
+    # Global Crop Demand and Supply Market Clearing: near zero #; 	
+    Formula (all,r,REG) CHK01(r) 
+        =QCROPr(r) 
+        - [QCRPFEEDr(r) + QCRPFOODr(r) + QCONSr("Crops",r) 
+        + QCRPBIOFr(r)];
+!
+Coefficient (REAL) (all,r,REG) CHK02(r)
+    # Global-Local Crop Demand Clearing - GTAP Approach: near zero #; 	
+    Formula (all,r,REG) CHK02(r) 
+        = sum(c, FOOD_COMM, sum(k, MKT, QDCROPr(r,c,k)))
+          - QCRPFEEDr(r) - QCRPFOODr(r) - QCONSr("Crops",r);
+!
+Coefficient (REAL) (all,r,REG) CHK03(r)
+    # Global-Local Crop Supply Market Clearing: near zero #; 	
+    Formula (all,r,REG) CHK03(r) 
+        = sum(k, MKT, QSCROPr(r,k)) - QCROPr(r);
+
+Coefficient (REAL) (all,r,REG) CHK04(r)
+    # Crop Zero Profits: near zero #; 	
+    Formula (all,r,REG) CHK04(r) 
+        = VCROPr(r) - [VLANDr(r) + VNLANDr(r)];
+
+Coefficient (REAL) (all,r,REG) CHK05(r)
+    # Livestock Zero Profits: near zero #; 	
+    Formula (all,r,REG) CHK05(r) 
+        = VCONSr("Livestock",r) - [VNCRPFEEDr(r) + QCRPFEEDr(r) * PCROP]; 
+
+Coefficient (REAL) (all,r,REG) CHK06(r)
+    # Processed Food Zero Profits: near zero #; 	
+    Formula (all,r,REG) CHK06(r) 
+        = VCONSr("Proc_Food",r) - [VNCRPFOODr(r) + QCRPFOODr(r) * PCROP];
+
+Coefficient (REAL) (all,r,REG) CHK07(r)
+    # Local Crop Demand Clearing - Global Pool: near zero #; 	
+    Formula (all,r,REG) CHK07(r) 
+        = sum(c, FOOD_COMM, QDCROPr(r,c,"local")) + 
+          QCRPBIOFr(r) - QSCROPr(r,"local");
+
+Coefficient (REAL) CHK08
+    # Global Crop Demand Clearing - Global Pool: near zero #; 	
+    Formula CHK08 
+        = sum(r, REG, QSCROPr(r,"global")) - 
+          sum(r, REG, sum(c, FOOD_COMM, QDCROPr(r,c,"global")));
+
+Coefficient (REAL) (all,r,REG) CHK09(r)
+    # Regional Crop Demand Clearing - Global Pool: near zero #; 	
+    Formula (all,r,REG) CHK09(r) 
+        = QSCROPr(r,"global") - 
+          sum(c, FOOD_COMM, QDCROPr(r,c,"global"));
+
+Write 
+QCONSr to file REGDATA header"QCON";
+VCONSr to file REGDATA header "VCON";
+INC_PCr to file REGDATA header "YPC" ;
+POPr to file REGDATA header "POP" ;
+VCROPr to file REGDATA header "VCRP";
+QCROPr to file REGDATA header "QS";
+QCRPFEEDr to file REGDATA header "QFD" ;
+QCRPFOODr to file REGDATA header "QPR" ;
+QCRPBIOFr to file REGDATA header "QBIO";
+QLANDr to file REGDATA header "QLD" ;
+VLANDr to file REGDATA header "VLD" ;
+VNLANDr to file REGDATA header "VNLD";
+PNLANDr to file REGDATA header "PNLD";
+VNCRPFEEDr to file REGDATA header "VNF" ;
+VNCRPFOODr to file REGDATA header "VNPR";
+PNCRPFEEDr to file REGDATA header "PNF" ;
+PNCRPFOODr to file REGDATA header "PNPR";
+QSCROPr to file REGDATA header "QSCP";
+QDCROPr to file REGDATA header "QDCP";
+Write(set) REG  to file REGDATA header "H1";
+Write(set) NREG  to file REGDATA header "H2";
+Write(set) CONS_COMM  to file REGDATA header "AGGC";
+Write(set) FOOD_COMM  to file REGDATA header "AGGF";
+Write(set) MKT  to file REGDATA header "MKT";
+Write(set) COEF  to file REGDATA header "COEF";
+Write(BY_ELEMENTS) MP_REG  to file REGDATA header "MP1";
+
+Write 
+CHK00 to file DATACHKS header "CH00";
+CHK01 to file DATACHKS header "CH01";
+!CHK02 to file DATACHKS header "CH02";!
+CHK03 to file DATACHKS header "CH03";
+CHK04 to file DATACHKS header "CH04";
+CHK05 to file DATACHKS header "CH05";
+CHK06 to file DATACHKS header "CH06";
+CHK07 to file DATACHKS header "CH07";
+CHK08 to file DATACHKS header "CH08";
+CHK09 to file DATACHKS header "CH09";
+PCROP to file DATACHKS header "PCRP";
+
